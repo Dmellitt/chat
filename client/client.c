@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 }
 
 //helper threads for messages
-void *handle_messages(){
+void *handle_messages(void * args){
   char* buf;
   while(ACTIVE) { 
     char* message;
