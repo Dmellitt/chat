@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in sin;
 
   if (argc != 4){
-    fprintf(stderr, "usage: ./client server port username");
+    fprintf(stderr, "usage: ./client server port username\n");
     exit(1);
   }
 
@@ -69,7 +69,8 @@ int main(int argc, char *argv[]) {
   //MAIN LOOP//
   while (!EXIT) {
     //Log in 
-    login(username);
+    if(login(username))
+      exit(1);
     
     pthread_t thread;
     int rc = pthread_create(&thread, NULL, handle_messages, NULL);
@@ -104,7 +105,7 @@ void *handle_messages(void * args){
   while(ACTIVE) { 
     char* message;
     if(read(s, buf, MAXDATASIZE) == -1) {
-      perror("client: receive error");
+      perror("client: receive error 2\n");
       return 0;
     }
     if (buf[0] == 'D'){ //check if data message
@@ -124,19 +125,19 @@ int login(char* username){
   char* password;
 
   if (send(s, username, strlen(username), 0) == -1) {
-    perror("client: send error");
+    perror("client: send error\n");
     return 1;
   }
 
   if(read(s, buf, MAXDATASIZE) == -1) {
-    perror("client: receive error");
+    perror("client: receive error 1\n");
     return 1;
   }
   printf("%s", buf);
   scanf("%s", password);
 
   if (send(s, password, strlen(password), 0) == -1) {
-    perror("client: send error");
+    perror("client: send error\n");
     return 1;
   }
 
