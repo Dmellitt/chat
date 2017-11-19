@@ -109,7 +109,7 @@ void *handle_messages(){
     }
     if (buf[0] == 'D'){ //check if data message
       buf++;
-      printf("%s", buf);
+      printf("%s\n", buf);
     }
     else {
       buf++;
@@ -120,9 +120,33 @@ void *handle_messages(){
 }
 
 int login(char* username){
+  char* buf;
+  char* password;
+
   if (send(s, username, strlen(username), 0) == -1) {
     perror("client: send error");
-    return 0;
+    return 1;
   }
-  return 1;
+
+  if(read(s, buf, MAXDATASIZE) == -1) {
+    perror("client: receive error");
+    return 1;
+  }
+  printf("%s", buf);
+  scanf("%s", password);
+
+  if (send(s, password, strlen(password), 0) == -1) {
+    perror("client: send error");
+    return 1;
+  }
+
+  return 0;
+}
+
+void broadcast(){
+
+}
+
+void private_message(){
+
 }
