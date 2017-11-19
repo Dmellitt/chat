@@ -1,2 +1,2 @@
 all:
-	gcc server.c -lpthread -o server
+	gcc server.c -lpthread -o chatserver
