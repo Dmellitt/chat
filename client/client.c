@@ -13,12 +13,17 @@
 #include <unistd.h>
 #include <libgen.h>
 
+#define MAXDATASIZE 4096
+
 void private_message();
 void broadcast();
 void *handle_messages(void *);
 
+int EXIT = 0;
+int ACTIVE = 1;
+int s;
+
 int main(int argc, char *argv[]) { 
-  int s; 
   struct hostent *hp;
   struct sockaddr_in sin;
 
@@ -30,6 +35,7 @@ int main(int argc, char *argv[]) {
   char* host = argv[1];
   int port = atoi(argv[2]);
   char* username = argv[3];
+  
 
   // translate host name into IP address
   hp = gethostbyname(host);
@@ -88,14 +94,19 @@ int main(int argc, char *argv[]) {
 }
 
 void *handle_messages(){
+  char buf[MAXDATASIZE];
   while(ACTIVE) { 
     char* message;
-    s.recv(message);
-    if (message is Data Message){
+    if(read(s, buf, MAXDATASIZE) == -1) {
+      perror("client: receive error");
+      return 0;
+    }
+    if (1){ //check if data message
       //handle data message
     }
     else {
       //handle command message
     }
   }
+  return 0;
 }
