@@ -15,14 +15,18 @@
 
 #define MAXDATASIZE 4096
 
+//functions
 void private_message();
 void broadcast();
 void *handle_messages(void *);
+int login(char*);
 
+//global vars
 int EXIT = 0;
 int ACTIVE = 1;
 int s;
 
+//main thread
 int main(int argc, char *argv[]) { 
   struct hostent *hp;
   struct sockaddr_in sin;
@@ -62,9 +66,10 @@ int main(int argc, char *argv[]) {
     exit(1);
   } 
 
+  //MAIN LOOP//
   while (!EXIT) {
-    // Log in // 
-    //login(username)
+    //Log in 
+    login(username);
     
     pthread_t thread;
     int rc = pthread_create(&thread, NULL, handle_messages, NULL);
@@ -93,20 +98,31 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
+//helper threads for messages
 void *handle_messages(){
-  char buf[MAXDATASIZE];
+  char* buf;
   while(ACTIVE) { 
     char* message;
     if(read(s, buf, MAXDATASIZE) == -1) {
       perror("client: receive error");
       return 0;
     }
-    if (1){ //check if data message
-      //handle data message
+    if (buf[0] == 'D'){ //check if data message
+      buf++;
+      printf("%s", buf);
     }
     else {
+      buf++;
       //handle command message
     }
   }
   return 0;
+}
+
+int login(char* username){
+  if (send(s, username, strlen(username), 0) == -1) {
+    perror("client: send error");
+    return 0;
+  }
+  return 1;
 }
