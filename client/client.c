@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <libgen.h>
 
 void private_message();
 void broadcast();
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]) {
         printf("Invalid Entry\n");
       }
     }
-    s.close_socket();
+    close(s);
   }
   return 0;
 }
