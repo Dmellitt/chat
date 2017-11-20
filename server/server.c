@@ -27,6 +27,9 @@ struct node {
 //the thread function
 void *connection_handler(void *);
 int login(int sock);
+int broadcast(int sock);
+int private(int sock);
+int end(int sock);
 
 void del(struct node * current)
 {
@@ -123,10 +126,41 @@ void *connection_handler(void *socket_desc)
 {
   //Get the socket descriptor
   int sock = *(int*)socket_desc;
-  char * username;
+  int read_size;
+  char * username, buf[BUFSIZE];
 
   if(login(sock) < 0)
     return 0;
+
+  while(1) {
+    if(recv(sock , buf, 1 , 0) < 0)
+    {
+      printf("Error reading\n");
+      return 0;
+    }
+
+    if(buf[0] == 'B')
+      broadcast(sock);
+    else if(buf[0] == 'P')
+      private(sock);
+    else if (buf[0] == 'E')
+      end(sock);
+  }
+}
+
+int broadcast(int sock)
+{
+  return 0;
+}
+
+int private(int sock)
+{
+  return 0;
+}
+
+int end(int sock)
+{
+  return 0;
 }
 
 int login(int sock)
