@@ -18,8 +18,26 @@
 
 #define BUFSIZE 4096
 
+struct node {
+  int socket;
+  char username[20];
+  struct node * next;
+};
+
 //the thread function
 void *connection_handler(void *);
+int login(int sock);
+
+void del(struct node * current)
+{
+  if(current->next)
+    del(current->next);
+
+  free(current);
+}
+
+struct node root;
+struct node * newest = &root;
 
 int main(int argc , char *argv[])
 {
@@ -65,6 +83,16 @@ int main(int argc , char *argv[])
 
   while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
   {
+    newest->socket = client_sock;
+    newest->next = malloc(sizeof(struct node));
+    if(newest->next == NULL){
+      printf("Error allocating user node\n");
+      return 1;
+    }
+    newest = newest->next;
+    newest->socket = -1;
+    newest->next = NULL;
+
     puts("Connection accepted");
 
     if( pthread_create( &thread_id , NULL ,  connection_handler , (void*) &client_sock) < 0)
@@ -84,6 +112,7 @@ int main(int argc , char *argv[])
     return 1;
   }
 
+  del(root.next);
   return 0;
 }
 
@@ -94,14 +123,22 @@ void *connection_handler(void *socket_desc)
 {
   //Get the socket descriptor
   int sock = *(int*)socket_desc;
+  char * username;
+
+  if(login(sock) < 0)
+    return 0;
+}
+
+int login(int sock)
+{
   int read_size;
-  char *message, username[20], password[20], buf[BUFSIZE];
+  char *message, password[20], username[20];
 
   //username
   if( (read_size = recv(sock , username , 20 , 0)) < 0 )
   {
     printf("Error reading\n");
-    return 0;
+    return -1;
   }
 
   //end of string marker
@@ -112,7 +149,7 @@ void *connection_handler(void *socket_desc)
 
   if(fp == NULL) {
     printf("Error opening file.\n");
-    return 0;
+    return -1;
   }
 
   int exists = 0;
@@ -120,7 +157,9 @@ void *connection_handler(void *socket_desc)
   size_t len = 0;
   //check name
   while(getline(&line, &len, fp) != -1) {
-    if(!strcmp(buf, username)) {
+    line[strlen(line)-1] = '\0';
+    printf("%s\n", line);
+    if(!strcmp(line, username)) {
       exists = 1;
 
       // associated password
@@ -136,73 +175,61 @@ void *connection_handler(void *socket_desc)
   else
     message = "New user? Create password >> ";
 
-  write(sock , message , strlen(message));
+  if(write(sock , message , strlen(message)) < 0) {
+    printf("Error writing\n");
+    return -1;
+  } 
 
   //password
-  if( (read_size = recv(sock , password , 20, 0)) < 0 )
+  if( read_size = recv(sock , password , 20, 0) < 0 )
   {
     printf("Error reading\n");
-    return 0;
+    return -1;
   }
+	password[read_size] = '\0';
 
   if(exists) {
     while(strcmp(line, password)) {
       message = "Invalid password.\nPlease enter again >> ";
-      write(sock , message , strlen(message));
+      if(write(sock , message , strlen(message)) < 0) {
+        printf("Error writing\n");
+        return -1;
+      } 
 
-      if( (read_size = recv(sock , password , 20, 0)) < 0 )
+      if( (read_size = recv(sock , password, 20, 0)) < 0 )
       {
         printf("Error reading\n");
-        return 0;
+        return -1;
       }
+	    password[read_size] = '\0';
     }
+    message = "Welcome!\n";
+    if(write(sock , message , strlen(message)) < 0) {
+      printf("Error writing\n");
+      return -1;
+    } 
   }
   else {
     fprintf(fp, username);
     fprintf(fp, "\n");
     fprintf(fp, password);
     fprintf(fp, "\n");
+
+    message = "Created new user. Welcome!\n";
+    if(write(sock , message , strlen(message)) < 0) {
+      printf("Error writing\n");
+      return -1;
+    } 
   }
 
+  struct node * current = &root;
+  while(current->socket != sock)
+    current = current->next;
+  strcpy(current->username, username);
+  
   fclose(fp);
   if(line)
     free(line);
 
-	//clear the message buffer
-  //memset(client_message, 0, BUFSIZE);
-
-
-
-  /*
-  //Send some messages to the client
-  message = "Greetings! I am your connection handler\n";
-  write(sock , message , strlen(message));
-
-  message = "Now type something and i shall repeat what you type \n";
-  write(sock , message , strlen(message));
-
-  //Receive a message from client
-  while( (read_size = recv(sock , client_message , BUFSIZE , 0)) > 0 )
-  {
-    //end of string marker
-	  client_message[read_size] = '\0';
-
-	  //Send the message back to client
-    write(sock , client_message , strlen(client_message));
-
-	  //clear the message buffer
-	  memset(client_message, 0, 2000);
-  }
-
-  if(read_size == 0)
-  {
-    puts("Client disconnected");
-    fflush(stdout);
-  }
-  else if(read_size == -1)
-  {
-    perror("recv failed");
-  }
-  */ 
   return 0;
 } 
