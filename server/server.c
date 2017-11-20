@@ -175,7 +175,7 @@ int broadcast(int sock)
 
   buf[i+1] = ':';
   buf[i+2] = ' ';
-  buf[i+2] = '\0';
+  buf[i+3] = '\0';
   int pre = strlen(buf);
   if( (read_size = recv(sock , buf+pre, BUFSIZE-pre, 0)) < 0 )
   {
@@ -194,6 +194,7 @@ int broadcast(int sock)
   }
     
   message = "Broadcast sent\n";
+  for(i=0;i<2;i++)
   if(write(sock , message , strlen(message)+1) < 0) {
     printf("Error writing\n");
     return -1;
@@ -257,7 +258,7 @@ int private(int sock)
 
   buf[i+1] = ':';
   buf[i+2] = ' ';
-  buf[i+2] = '\0';
+  buf[i+3] = '\0';
   int pre = strlen(buf);
 
   // read message
