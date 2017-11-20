@@ -1,2 +1,13 @@
 David Mellitt dmellitt
 Brian Byrne bbyrne5
+
+compile by running make files in the folders
+server.c and client.c
+
+Run server:
+./binary portnumber
+./chatserver 41004
+
+Run client:
+./binary host port username
+./chatclient student00.cse.nd.edu 41004 steve110
