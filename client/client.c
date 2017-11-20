@@ -16,10 +16,11 @@
 #define MAXDATASIZE 4096
 
 //functions
-void private_message();
-void broadcast();
+int private_message();
+int broadcast();
 void *handle_messages(void *);
 int login(char*);
+int quit(pthread_t);
 
 //global vars
 int EXIT = 0;
@@ -89,7 +90,7 @@ int main(int argc, char *argv[]) {
       else if (strcmp(op, "B") == 0)
         broadcast();
       else if (strcmp(op, "E") == 0)
-        exit(-1);
+        quit(thread);
       else {
         printf("Invalid Entry\n");
       }
@@ -101,19 +102,17 @@ int main(int argc, char *argv[]) {
 
 //helper threads for messages
 void *handle_messages(void * args){
-  char* buf;
+  char buf[MAXDATASIZE];
   while(ACTIVE) { 
     char* message;
-    if(read(s, buf, MAXDATASIZE) == -1) {
+    if(recv(s, buf, MAXDATASIZE, 0) == -1) {
       perror("client: receive error 2\n");
       return 0;
     }
     if (buf[0] == 'D'){ //check if data message
-      buf++;
-      printf("%s\n", buf);
+      printf("%s\n", buf+1);
     }
     else {
-      buf++;
       //handle command message
     }
   }
@@ -121,33 +120,132 @@ void *handle_messages(void * args){
 }
 
 int login(char* username){
-  char* buf;
-  char* password;
-
-  if (send(s, username, strlen(username), 0) == -1) {
+  char buf[MAXDATASIZE];
+  char password[MAXDATASIZE];
+  int cont = 0;
+  if(send(s, username, strlen(username), 0) == -1) {
     perror("client: send error\n");
     return 1;
   }
 
-  if(read(s, buf, MAXDATASIZE) == -1) {
+  if(recv(s, buf, MAXDATASIZE, 0) == -1) {
     perror("client: receive error 1\n");
     return 1;
   }
-  printf("%s", buf);
-  scanf("%s", password);
 
-  if (send(s, password, strlen(password), 0) == -1) {
+  while(cont){
+    printf("%s", buf);
+    scanf("%s", password);
+
+    if (send(s, password, strlen(password), 0) == -1) {
+      perror("client: send error\n");
+      return 1;
+    }
+    
+    //gets message back about password
+    if(recv(s, buf, MAXDATASIZE, 0) == -1) {
+      perror("client: receive error 1\n");
+      return 1;
+    }
+
+    if(buf[0] != 'I')
+      cont = 1;
+  }
+
+
+  return 0;
+}
+
+int broadcast(){
+  char buf[MAXDATASIZE];
+
+  if (send(s, "B", 1, 0) == -1) {
     perror("client: send error\n");
+    return 1;
+  }
+
+  //acknowledgment 
+  if(recv(s, buf, MAXDATASIZE, 0) == -1) {
+    perror("client: receive error 1\n");
+    return 1;
+  }
+
+  //the actual message
+  if(buf[0] == '0'){
+    printf("Enter broadcast message >> ");
+    scanf("%s", buf);
+    if (send(s, buf, strlen(buf), 0) == -1) {
+      perror("client: send error\n");
+      return 1;
+    }
+  }
+  else
+    return 1;
+
+  //confirmation it sent
+  if(recv(s, buf, MAXDATASIZE, 0) == -1) {
+    perror("client: receive error 1\n");
     return 1;
   }
 
   return 0;
 }
 
-void broadcast(){
+int private_message(){
+  char buf[MAXDATASIZE];
 
+  //Sending private message
+  if (send(s, "P", 1, 0) == -1) {
+    perror("client: send error\n");
+    return 1;
+  }
+
+  //acknowledgment 
+  if(recv(s, buf, MAXDATASIZE, 0) == -1) {
+    perror("client: receive error 1\n");
+    return 1;
+  }
+
+  //print users
+  printf("%s\n", buf);
+  printf("Which user do you want to send to? >> ");
+  scanf("%s", buf);
+
+  //choose a user
+  if (send(s, buf, strlen(buf), 0) == -1) {
+    perror("client: send error\n");
+    return 1;
+  }
+
+  //write and send message
+  printf("Enter private message >> ");
+  scanf("%s", buf);
+
+  if (send(s, buf, strlen(buf), 0) == -1) {
+    perror("client: send error\n");
+    return 1;
+  }
+
+  //confirmation
+  if(recv(s, buf, MAXDATASIZE, 0) == -1) {
+    perror("client: receive error 1\n");
+    return 1;
+  }
+
+  printf("%s", buf);
+
+  return 0;
 }
 
-void private_message(){
+int quit(pthread_t thread){
+  if (send(s, "E", 1, 0) == -1) {
+    perror("client: send error\n");
+    return 1;
+  }
+  ACTIVE = 0;
+  pthread_join(thread, NULL);
+  EXIT = 1;
+  close(s);
 
+  return 0;
 }
