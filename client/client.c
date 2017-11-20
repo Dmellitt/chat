@@ -20,6 +20,7 @@ int private_message();
 int broadcast();
 void *handle_messages(void *);
 int login(char*);
+int quit(pthread_t);
 
 //global vars
 int EXIT = 0;
@@ -89,7 +90,7 @@ int main(int argc, char *argv[]) {
       else if (strcmp(op, "B") == 0)
         broadcast();
       else if (strcmp(op, "E") == 0)
-        exit(-1);
+        quit(thread);
       else {
         printf("Invalid Entry\n");
       }
@@ -232,6 +233,19 @@ int private_message(){
   }
 
   printf("%s", buf);
+
+  return 0;
+}
+
+int quit(pthread_t thread){
+  if (send(s, "E", 1, 0) == -1) {
+    perror("client: send error\n");
+    return 1;
+  }
+  ACTIVE = 0;
+  pthread_join(thread, NULL);
+  EXIT = 1;
+  close(s);
 
   return 0;
 }
